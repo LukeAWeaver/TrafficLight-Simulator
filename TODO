@@ -1,0 +1,4 @@
+SWITCHES: 13 switches total
+  *switch for each car (4 switches)
+  *switch if each car wants to turn left or right, if neither the car will go straight (8 switches)
+  *reset (1 switch)
