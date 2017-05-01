@@ -28,19 +28,19 @@ use IEEE.NUMERIC_STD.all;
 
 entity TrafficLight is
     Port ( rst : in STD_LOGIC;
-           carew : in STD_LOGIC;
            clk : in STD_LOGIC;
-           CW: in STD_LOGIC;
-           CE: in STD_LOGIC;
-           LeftNS: in STD_LOGIC;
-           lights:out STD_LOGIC_VECTOR(5 downto 0);
-           leftLight: out STD_LOGIC_VECTOR(2 downto 0));
+           CW: in STD_LOGIC; --car west
+           CE: in STD_LOGIC; --car east
+           LeftNS: in STD_LOGIC; --car in NS left turn lane
+           lights:out STD_LOGIC_VECTOR(5 downto 0); --NS EW lights
+           leftLight: out STD_LOGIC_VECTOR(2 downto 0)); --NS left turn nights
 end TrafficLight;
 
 architecture Behavioral of TrafficLight is
 type state_type is (GNS, YNS,GEW,YEW, LeftGNS, LeftYNS);
 SIGNAL state: state_type;
 Signal count : integer := 1;
+Signal leftSwap : std_logic :='1';
 begin
 process(clk, rst)
 begin
@@ -48,6 +48,7 @@ begin
 if (rst = '1') then
 count <= 1;
 lights <="100001";
+leftLight <= "001";
 state <= GNS;
 
 elsif(rising_edge(clk)) then
@@ -57,8 +58,15 @@ count <= count + 1;
 case state is
 
 when GNS =>
+-- green North South Red east west
 lights <="100001";
-leftLight <= "001";
+leftLight(0) <= '0';
+--toggle left turn yellow light on and off
+if(count mod 50000000 = 0) THEN
+    leftSwap <= not leftSwap;
+    leftLight(1) <= leftSwap;
+    end if;
+--if a car arrives east west then switch lights
 if(CW = '1' OR CE = '1') then
 count <= 1;
 state <= YNS;
@@ -69,6 +77,8 @@ end if;
 
 when YNS => 
 lights <="010001";
+leftLight <= "010";
+--stay yellow for three seconds
 if(count > 300000000) THEN
 count <= 1;
 state <= GEW;
@@ -89,8 +99,10 @@ end if;
 when YEW =>
  -- add delay again here
  lights <="001010";
+ --stay yellow for 
  IF(count >300000000) THEN
  count <=1;
+    --if there is someone in left turn lane then go to LeftGNS
     IF(LeftNS = '1') THEN
         state <= LeftGNS;
     else
@@ -101,15 +113,18 @@ when YEW =>
  END IF;
      
  when LeftGNS =>
+    --both NS and EW lights are red
     lights <= "001001";
     leftLight <="100";
-    IF(count >300000000) THEN
+    --only stay green for 4 seconds
+    IF(count >400000000) THEN
         count <= 1;
         state <= LeftYNS;
     else
         state <= LeftGNS;
     end if;
  when LeftYNS =>
+    --NS EW lights stay red while left turn goes to yellow
     lights <= "001001";
     leftLight <= "010";
     IF(count > 300000000) THEN
