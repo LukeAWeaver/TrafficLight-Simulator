@@ -68,10 +68,12 @@ begin
                 end if;
                 -- if a car arrives east west then switch lights
                 if(CW = '1' or CE = '1') then
-                    count <= 1;
-                    state <= YNS;
-                else 
-                    state <=GNS;
+                    if (count > 500000000) then
+                        count <= 1;
+                        state <= YNS;
+                    else 
+                        state <=GNS;
+                end if;
                 end if;
 
             when YNS => 
@@ -88,7 +90,7 @@ begin
             when GEW =>
                 lights <="001100";
                 leftLight <= "001";
-                if(CW = '0' AND CE ='0') then
+                if((CW = '0' AND CE ='0') OR count > 500000000) then
                     count <= 1;
                     state <=YEW;
                 else 
@@ -96,7 +98,6 @@ begin
                 end if;
 
             when YEW =>
-                -- add delay again here
                 lights <="001010";
                 -- stay yellow for 
                 if(count > 300000000) then
